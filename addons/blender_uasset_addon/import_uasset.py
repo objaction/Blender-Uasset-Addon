@@ -913,7 +913,7 @@ class UASSET_OT_import_uasset(Operator, ImportHelper):
 
     def execute(self, context):
         """Run the operator."""
-        if bpy_util.os_is_windows():
+        if bpy_util.os_is_windows() and not bpy.app.background:
             bpy.ops.wm.console_toggle()
             bpy.ops.wm.console_toggle()
         return self.import_uasset(context)

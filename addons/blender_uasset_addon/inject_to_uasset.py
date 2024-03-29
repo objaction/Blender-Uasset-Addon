@@ -509,7 +509,7 @@ class UASSET_OT_inject_to_uasset(Operator):
         """Inject selected objects into a selected file."""
         start_time = time.time()
         general_options = context.scene.uasset_general_options
-        if bpy_util.os_is_windows():
+        if bpy_util.os_is_windows() and not bpy.app.background::
             bpy.ops.wm.console_toggle()
             bpy.ops.wm.console_toggle()
         try:
