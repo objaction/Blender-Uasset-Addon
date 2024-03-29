@@ -168,7 +168,7 @@ def load_utexture(file, name, version, asset=None, invert_normals=False, no_err=
 
 
 def generate_materials(asset, version, load_textures=False,
-                       invert_normal_maps=False, suffix_list=(['_C', '_D'], ['_N'], ['_A'])):
+                       invert_normal_maps=False, suffix_list=(['_C', '_D'], ['_N'], ['_A'], ["_M"],["_O"],["_B"])):
     """Add materials and textures, and make shader nodes.
 
     args:
@@ -262,6 +262,9 @@ def generate_materials(asset, version, load_textures=False,
             types = search_suffix(suffix_list[0], 'COLOR', '_MAIN', types, names, material_name)
             types = search_suffix(suffix_list[1], 'NORMAL', '_MAIN', types, names, material_name)
             types = search_suffix(suffix_list[2], 'GRAY', '_ALPHA', types, names, material_name, need_suffix=True)
+            types = search_suffix(suffix_list[3], 'COLOR', '_MATERIAL', types, names, material_name)
+            types = search_suffix(suffix_list[4], 'GRAY', '_OCCLUSION', types, names, material_name)
+            types = search_suffix(suffix_list[5], 'COLOR', '_BUMP', types, names, material_name, need_suffix=True)
 
             height = 300
             for name, tex_type in zip(names, types):
@@ -545,7 +548,7 @@ def load_uasset(file, rename_armature=True, keep_sections=False,
                 smoothing=True, only_skeleton=False,
                 show_axes=False, bone_display_type='OCTAHEDRAL', show_in_front=True,
                 load_textures=False, invert_normal_maps=False, ue_version='4.18',
-                suffix_list=(['_C', '_D'], ['_N'], ['_A']),
+                suffix_list=(['_C', '_D'], ['_N'], ['_A'], ["_M"],["_O"],["_B"]),
                 ignore_missing_bones=False, start_frame_option='DEFAULT',
                 rotation_format='QUATERNION', ignore_root_bone=False,
                 import_as_nla=False, only_first_frame=False,
@@ -734,6 +737,30 @@ class UassetImportOptions(PropertyGroup):
         default='_A',
     )
 
+    suffix_for_material: StringProperty(
+        name='Suffix for material map',
+        description=(
+            'The suffix will be used to determine which 2ch texture is the main material map'
+        ),
+        default='_M',
+    )
+
+    suffix_for_occlusion: StringProperty(
+        name='Suffix for occlusion map',
+        description=(
+            'The suffix will be used to determine which 2ch texture is the main occlusion map'
+        ),
+        default='_O',
+    )
+
+    suffix_for_bump: StringProperty(
+        name='Suffix for bump map',
+        description=(
+            'The suffix will be used to determine which 2ch texture is the main bump map'
+        ),
+        default='_B',
+    )
+
     minimal_bone_length: FloatProperty(
         name='Minimal Bone Length',
         description='Force all bones to be longer than this value',
@@ -888,7 +915,7 @@ class UASSET_OT_import_uasset(Operator, ImportHelper):
         props = [
             ['ue_version', 'verbose'],
             ['load_textures', 'keep_sections', 'smoothing'],
-            ['invert_normal_maps', 'suffix_for_color', 'suffix_for_normal', 'suffix_for_alpha'],
+            ['invert_normal_maps', 'suffix_for_color', 'suffix_for_normal', 'suffix_for_alpha',"suffix_for_material","suffix_for_occlusion","suffix_for_bump"],
             ['rotate_bones', 'minimal_bone_length', 'normalize_bones',
              'rename_armature', 'only_skeleton', 'show_axes', 'bone_display_type', 'show_in_front'],
             ['start_frame_option', 'rotation_format', 'import_as_nla',
@@ -935,7 +962,11 @@ class UASSET_OT_import_uasset(Operator, ImportHelper):
 
             suffix_list = [str_to_list(import_options.suffix_for_color),
                            str_to_list(import_options.suffix_for_normal),
-                           str_to_list(import_options.suffix_for_alpha)]
+                           str_to_list(import_options.suffix_for_alpha),
+                           str_to_list(import_options.suffix_for_material),
+                           str_to_list(import_options.suffix_for_occlusion),
+                           str_to_list(import_options.suffix_for_bump),
+                           ]
             _, asset_type = load_uasset(
                 file,
                 rename_armature=import_options.rename_armature,
