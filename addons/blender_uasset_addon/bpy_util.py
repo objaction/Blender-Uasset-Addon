@@ -715,7 +715,14 @@ def assign_texture(texture, material, tex_type='COLOR',
     tex_node.location = location
 
     if tex_type == 'COLOR_MAIN':
-        links.new(bsdf_node.inputs['Base Color'], tex_node.outputs['Color'])
+        mix_node = nodes.new("ShaderNodeMix")
+        mix_node.location = [location[0] + 300, location[1]]
+        mix_node.data_type = "RGBA"
+        mix_node.blend_type = "MULTIPLY"
+        mix_node.clamp_factor = False
+        mix_node.inputs[0].default_value = 1
+        links.new(mix_node.inputs[6], tex_node.outputs['Color'])
+        links.new(bsdf_node.inputs['Base Color'], mix_node.outputs[2])
         tex_node.image.colorspace_settings.name = 'sRGB'
     if 'NORMAL' in tex_type:
         normal_node = nodes.new('ShaderNodeNormalMap')
@@ -732,11 +739,35 @@ def assign_texture(texture, material, tex_type='COLOR',
             normal_node.location = [location[0] + 450, location[1]]
             links.new(normal_node.inputs['Color'], tex_node.outputs['Color'])
         if 'MAIN' in tex_type:
-            links.new(bsdf_node.inputs['Normal'], normal_node.outputs['Normal'])
+            bump_node = nodes.get("Bump")
+            if bump_node:
+                links.new(bump_node.inputs['Normal'], normal_node.outputs['Normal'])
+            else:
+                links.new(bsdf_node.inputs['Normal'], normal_node.outputs['Normal'])
     if 'ALPHA' in tex_type:
         links.new(bsdf_node.inputs['Alpha'], tex_node.outputs['Color'])
         enable_alpha_for_material(material)
-
+    if 'COLOR_MATERIAL' in tex_type:
+        material_node = nodes.new('ShaderNodeSeparateColor')
+        material_node.location = [location[0] + 300, location[1]]
+        links.new(material_node.inputs['Color'], tex_node.outputs['Color'])
+        links.new(bsdf_node.inputs['Metallic'], material_node.outputs['Red'])
+        links.new(bsdf_node.inputs['Roughness'], material_node.outputs['Green'])
+        links.new(bsdf_node.inputs['Specular'], material_node.outputs['Blue'])
+    if 'OCCLUSION' in tex_type:
+        mix_node = nodes.get("Mix")
+        links.new(mix_node.inputs[7], tex_node.outputs['Color'])
+        uv_node = nodes.new("ShaderNodeUVMap")
+        uv_node.location = [location[0] + -300, location[1]]
+        uv_node.uv_map = "UVMap1"
+        links.new(tex_node.inputs["Vector"], uv_node.outputs['UV'])
+    if 'BUMP' in tex_type:
+        bump_node = nodes.new("ShaderNodeBump")
+        bump_node.location = [location[0] + 300, location[1]]
+        bump_node.invert = True
+        bump_node.inputs["Strength"].default_value = 0.1
+        links.new(bump_node.inputs['Height'],tex_node.outputs["Color"])
+        links.new(bsdf_node.inputs['Normal'],bump_node.outputs["Normal"])
 
 def make_trs(trans, rot, scale):
     """Calculate TRS matrix.
