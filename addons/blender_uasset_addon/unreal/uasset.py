@@ -3,6 +3,7 @@ import ctypes as c
 import os
 
 from ..util import io_util as io
+from ..util.crc import generate_hash
 from ..util.version import VersionInfo
 from .uexp import Uexp
 
@@ -66,15 +67,14 @@ class UassetHeader(c.LittleEndianStructure):
             io.check(io.read_int32(f), -1)
         return header
 
-    @staticmethod
-    def write(f, header):
+    def write(self, f):
         """Write function."""
         f.write(UassetHeader.HEAD)
-        io.write_int32(f, -header.version - 1)
-        f.write(header.null)
-        f.write(header)
-        if header.version >= 7:
-            io.write_uint32(f, header.unk_count)
+        io.write_int32(f, -self.version - 1)
+        f.write(self.null)
+        f.write(self)
+        if self.version >= 7:
+            io.write_uint32(f, self.unk_count)
             io.write_int32(f, -1)
             io.write_int32(f, -1)
 
@@ -125,12 +125,11 @@ class UassetImport(c.LittleEndianStructure):
             imp.unk2 = io.read_uint32(f)
         return imp
 
-    @staticmethod
-    def write(f, imp, version):
+    def write(self, f, version):
         """Write function."""
-        f.write(imp)
+        f.write(self)
         if version == '5.0':
-            io.write_uint32(f, imp.unk2)
+            io.write_uint32(f, self.unk2)
 
     def name_import(self, name_list):
         """Convert ids to strings."""
@@ -207,12 +206,11 @@ class UassetExport(c.LittleEndianStructure):
             exp.unk2 = io.read_uint32(f)
         return exp
 
-    @staticmethod
-    def write(f, exp, version):
+    def write(self, f, version):
         """Write function."""
-        f.write(exp)
+        f.write(self)
         if version == '5.0':
-            io.write_uint32(f, exp.unk2)
+            io.write_uint32(f, self.unk2)
 
     def update(self, size, offset):
         """Update attributes."""
@@ -376,8 +374,7 @@ class Uasset:
             self.header.name_count = len(self.name_list)
             self.header.name_count2 = len(self.name_list)
             # write name table
-            if len(self.name_list) > len(self.hash_list):
-                self.hash_list += [b'\x00' * 4] * (len(self.name_list) - len(self.hash_list))
+            self.hash_list = [generate_hash(name) for name in self.name_list]
             for name, hash_ in zip(self.name_list, self.hash_list):
                 io.write_str(f, name)
                 f.write(hash_)
@@ -385,12 +382,12 @@ class Uasset:
             # write imports
             self.header.import_offset = f.tell()
             self.header.import_count = len(self.imports)
-            list(map(lambda x: UassetImport.write(f, x, self.version), self.imports))
+            list(map(lambda x: x.write(f, self.version), self.imports))
 
             # skip exports part
             self.header.export_offset = f.tell()
             self.header.export_count = len(self.exports)
-            list(map(lambda x: UassetExport.write(f, x, self.version), self.exports))
+            list(map(lambda x: x.write(f, self.version), self.exports))
             self.header.end_to_export = f.tell()
 
             # file data ids
@@ -404,7 +401,7 @@ class Uasset:
 
             # write header
             f.seek(0)
-            UassetHeader.write(f, self.header)
+            self.header.write(f)
 
             # write exports
             f.seek(self.header.export_offset)
@@ -412,4 +409,4 @@ class Uasset:
             for export in self.exports:
                 export.update(export.size, offset)
                 offset += export.size
-            list(map(lambda x: UassetExport.write(f, x, self.version), self.exports))
+            list(map(lambda x: x.write(f, self.version), self.exports))
