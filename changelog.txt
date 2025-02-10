@@ -1,8 +1,17 @@
+v0.2.2
+- Added support for texture injection.
+- Added hash generation for name table.
+- Fixed an error when loading some KH3 animations.
+- Fixed an error when using unregister functions.
+- Fixed an error when failing to get info from the relese page.
+- Applied a proper DXGI format for B8G8R8A8.
+- Unified usages of write functions
+
 v0.2.1
 - Supported skeletal mesh and animations for KH3. (Injection is NOT supported yet.)
 - Improved texture loading speed
 - Supported some dds formats Blender doesn't support (e.g. BC7)
-- Added an UI panel that displays when an updated version is available.
+- Added a UI panel that displays when an updated version is available.
 - Added support for Japanese.
 - Fixed reload functions for "Reload Scripts" in Blender
 - Fixed a warning for deprecated API
