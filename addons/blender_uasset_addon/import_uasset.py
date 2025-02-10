@@ -147,7 +147,7 @@ def load_utexture(file, name, version, asset=None, invert_normals=False, no_err=
             tex_type = 'COLOR'
         dds = DDS.asset_to_DDS(asset)
         dds.save(temp)
-        tga_file = texconv.convert_to_tga(temp, utex.format_name, texture_type=utex.uasset.asset_type,
+        tga_file = texconv.convert_to_tga(temp, utex.format_name, utex.uasset.asset_type,
                                           out=os.path.dirname(temp), invert_normals=invert_normals)
         if tga_file is None:  # if texconv doesn't exist
             tex = bpy_util.load_dds(tga_file, name=name, tex_type=tex_type, invert_normals=invert_normals)
@@ -264,7 +264,7 @@ def generate_materials(asset, version, load_textures=False,
             types = search_suffix(suffix_list[2], 'GRAY', '_ALPHA', types, names, material_name, need_suffix=True)
             types = search_suffix(suffix_list[3], 'COLOR', '_MATERIAL', types, names, material_name)
             types = search_suffix(suffix_list[4], 'GRAY', '_OCCLUSION', types, names, material_name)
-            types = search_suffix(suffix_list[5], 'COLOR', '_BUMP', types, names, material_name, need_suffix=True)
+            types = search_suffix(suffix_list[5], 'COLOR', '_BUMP', types, names, material_name, need_suffix=True)            
 
             height = 300
             for name, tex_type in zip(names, types):
@@ -427,6 +427,8 @@ def load_bone_track(pose_bone, ue_bone, track, action, start_frame=0, interval=1
             keys = [keys[0]]
             if len(times) > 0:
                 times = [times[0]]
+        if len(times) == 0:
+            times = [i for i in range(len(keys))]
         times = [t * interval + start_frame for t in times]
         load_acl_track(pose_bone, ue_bone, data_path, keys, times, action,
                        rescale_factor=rescale_factor, rotation_format=rotation_format)
@@ -469,8 +471,8 @@ def load_animation(anim, armature, ue_version, rescale=1.0, ignore_missing_bones
     # Get animation data
     bone_ids = anim.bone_ids
     compressed_data = anim.compressed_data
-    num_frames = anim.num_frames
-    print(f'frame count: {num_frames}')
+    num_samples = anim.num_frames
+    print(f'frame count: {num_samples}')
 
     # Check required bones
     if not ignore_missing_bones:
@@ -507,7 +509,7 @@ def load_animation(anim, armature, ue_version, rescale=1.0, ignore_missing_bones
     if import_as_nla:
         action = bpy.data.actions.new(name=anim_name)
         nla_track = bpy_util.add_nla_track(armature, name=anim_name)
-        end_frame = max((num_frames - 1) * interval, 1)
+        end_frame = max((num_samples - 1) * interval, 1)
         _ = bpy_util.add_nla_strip(nla_track, anim_name, start_frame, action, end=end_frame)
         start_frame = 0
     else:

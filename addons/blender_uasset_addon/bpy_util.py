@@ -6,20 +6,6 @@ from mathutils import Matrix
 import numpy as np
 
 
-def get_texture(context):
-    """Get texture from Image Editor."""
-    area = context.area
-    if area.type == 'IMAGE_EDITOR':
-        space = area.spaces.active
-    else:
-        raise RuntimeError('Failed to get Image Editor. This is unexpected.')
-
-    tex = space.image
-    if tex is None:
-        raise RuntimeError('Select an image on Image Editor.')
-    return tex
-
-
 def translate(text):
     """Translate texts."""
     return bpy.app.translations.pgettext(text, msgctxt="*")
@@ -552,9 +538,9 @@ def smoothing(mesh_data, face_count, normals, enable_smoothing=True):
     mesh_data.polygons.foreach_set('use_smooth', smooth)
     mesh_data.validate()
     mesh_data.update()
-    mesh_data.create_normals_split()
+    #mesh_data.create_normals_split()
     mesh_data.normals_split_custom_set_from_vertices(normals)
-    mesh_data.use_auto_smooth = enable_smoothing
+    # mesh_data.use_auto_smooth = enable_smoothing
 
 
 def hsv_to_rgb(hue, sat, val):
@@ -608,7 +594,7 @@ def add_material(name, color_gen=None):
         material.diffuse_color = color_gen.gen_new_color()
     nodes = material.node_tree.nodes
     bsdf = nodes.get('Principled BSDF')
-    bsdf.inputs['Specular'].default_value = 0.0
+    bsdf.inputs['Specular IOR Level'].default_value = 0.0
     material.use_backface_culling = True
     return material
 
@@ -616,7 +602,7 @@ def add_material(name, color_gen=None):
 def enable_alpha_for_material(material):
     """Allow a mateiral to use alpha textures."""
     material.blend_method = 'HASHED'
-    material.shadow_method = 'HASHED'
+    #material.shadow_method = 'HASHED'
 
 
 def load_tga(file, name, color_space='Non-Color'):
@@ -753,7 +739,7 @@ def assign_texture(texture, material, tex_type='COLOR',
         links.new(material_node.inputs['Color'], tex_node.outputs['Color'])
         links.new(bsdf_node.inputs['Metallic'], material_node.outputs['Red'])
         links.new(bsdf_node.inputs['Roughness'], material_node.outputs['Green'])
-        links.new(bsdf_node.inputs['Specular'], material_node.outputs['Blue'])
+        links.new(bsdf_node.inputs['Specular IOR Level'], material_node.outputs['Blue'])
     if 'OCCLUSION' in tex_type:
         mix_node = nodes.get("Mix")
         links.new(mix_node.inputs[7], tex_node.outputs['Color'])
